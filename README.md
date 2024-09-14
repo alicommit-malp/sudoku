@@ -1,4 +1,4 @@
-# Sudoku Puzzel Generator
+# Free Sudoku Puzzel Generator
 
 ![Sample Puzzle](./samples/sample_puzzle.png)
 
@@ -71,21 +71,21 @@ The command above generates 10 easy puzzles and saves them in a PDF file named `
 
 1. **Generate 10 easy Sudoku puzzles and save them to a PDF**:
 
-   ```bash
-   ./sudoku_gen.py -config easy:10 -output sudoku_puzzles.pdf
-   ```
+```bash
+./sudoku_gen.py -config easy:10 -output sudoku_puzzles.pdf
+```
 
 2. **Generate 10 easy puzzles, 15 medium puzzles, and 5 hard puzzles, all in the same PDF**:
 
-   ```bash
-   ./sudoku_gen.py -config easy:10 -config medium:15 -config hard:5 -output sudoku_puzzles.pdf
-   ```
+```bash
+./sudoku_gen.py -config easy:10 -config medium:15 -config hard:5 -output sudoku_puzzles.pdf
+```
 
 3. **Generate 5 easy puzzles, 5 medium puzzles, and 5 hard puzzles, and generate a second PDF with the answers**:
 
-   ```bash
-   ./sudoku_gen.py -config easy:5 -config medium:5 -config hard:5 -output sudoku_puzzles.pdf -gen-answers true
-   ```
+```bash
+./sudoku_gen.py -config easy:5 -config medium:5 -config hard:5 -output sudoku_puzzles.pdf -gen-answers true
+```
 
 ---
 
