@@ -1,5 +1,7 @@
 # Sudoku Puzzle Generator
 
+![Sample Puzzle](./samples/sample_puzzle.png)
+
 This is a **Sudoku Puzzle Generator** written in Python, supporting the generation of Sudoku puzzles of varying difficulty levels (`easy`, `medium`, `hard`). The generator allows for customizable clue counts, optional puzzle symmetry, and the creation of professional-grade Sudoku puzzles. It can also generate PDFs of the puzzles and their solutions. The generator leverages **multiprocessing** to use all available CPU cores, making the puzzle generation process faster.
 
 ## Features
