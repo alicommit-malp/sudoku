@@ -8,8 +8,8 @@ class ArgumentParser:
             formatter_class=argparse.RawTextHelpFormatter,
             epilog="""
 Examples:
-  python main.py -config easy:20:40 -config medium:30:35 --use-symmetry
-  python main.py -config hard:10:17 -output sudoku_puzzles.pdf --gen-answers
+  python sudoku.py -config easy:20:40 -config medium:30:35 --use-symmetry
+  python sudoku.py -config hard:10:17 -output sudoku_puzzles.pdf --gen-answers
         """
         )
         self._add_arguments()
