@@ -1,4 +1,4 @@
-# Free Sudoku Puzzel Generator
+# Free Sudoku PDF Puzzel Generator
 
 ![Sample Puzzle](./samples/sample_puzzle.png)
 
@@ -32,6 +32,8 @@ To install the required packages, run:
 
 ```bash
 pip install fpdf numpy
+# or
+pip install -r requirements.txt
 ```
 
 ---
