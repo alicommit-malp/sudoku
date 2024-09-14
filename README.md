@@ -1,5 +1,11 @@
 # Sudoku Puzzel Generator
 
+![Sample Puzzle](./sample_puzzle.png)
+
+[Sample Puzzle PDF](./sudoku_puzzles.pdf)
+
+[Sample Puzzle Answers PDF](./sudoku_puzzles_answers.pdf)
+
 ## Description
 
 This project is a command-line Sudoku Puzzle Generator written in Python. It allows you to generate Sudoku puzzles of varying difficulty (easy, medium, and hard) and optionally generate an answer key in a separate PDF.
