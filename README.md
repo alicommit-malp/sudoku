@@ -1,10 +1,10 @@
 # Sudoku Puzzel Generator
 
-![Sample Puzzle](./sample_puzzle.png)
+![Sample Puzzle](./samples/sample_puzzle.png)
 
-[Sample Puzzle PDF](./sudoku_puzzles.pdf)
+[Sample Puzzle PDF](./samples/sudoku_puzzles.pdf)
 
-[Sample Puzzle Answers PDF](./sudoku_puzzles_answers.pdf)
+[Sample Puzzle Answers PDF](./samples/sudoku_puzzles_answers.pdf)
 
 ## Description
 
