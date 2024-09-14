@@ -1,4 +1,3 @@
-# pdf_generator.py
 from fpdf import FPDF
 
 class PDFGenerator:

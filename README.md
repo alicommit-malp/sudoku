@@ -1,104 +1,115 @@
-# Free Sudoku PDF Puzzel Generator
+# Sudoku Puzzle Generator
 
-![Sample Puzzle](./samples/sample_puzzle.png)
-
-[Sample Puzzle PDF](./samples/sudoku_puzzles.pdf)
-
-[Sample Puzzle Answers PDF](./samples/sudoku_puzzles_answers.pdf)
-
-## Description
-
-This project is a command-line Sudoku Puzzle Generator written in Python. It allows you to generate Sudoku puzzles of varying difficulty (easy, medium, and hard) and optionally generate an answer key in a separate PDF.
-
-The script generates Sudoku puzzles in PDF format and can also generate a second PDF containing the answers (solutions) for each puzzle.
-
----
+This is a **Sudoku Puzzle Generator** written in Python, supporting the generation of Sudoku puzzles of varying difficulty levels (`easy`, `medium`, `hard`). The generator allows for customizable clue counts, optional puzzle symmetry, and the creation of professional-grade Sudoku puzzles. It can also generate PDFs of the puzzles and their solutions. The generator leverages **multiprocessing** to use all available CPU cores, making the puzzle generation process faster.
 
 ## Features
 
-- Generate Sudoku puzzles of different difficulty levels: `easy`, `medium`, `hard`.
-- Output the puzzles in a PDF.
-- Optionally generate answers (solutions) in a separate PDF.
-- Supports multiple difficulty levels and puzzle counts in one run.
+- **Customizable Difficulty**: Generate puzzles with `easy`, `medium`, or `hard` difficulty levels.
+- **Custom Clue Count**: Specify the number of clues for each puzzle (e.g., `hard:1:17` generates a hard puzzle with exactly 17 clues).
+- **Optional Symmetry**: Use the `--use-symmetry` flag to generate puzzles with symmetrical clue placement for a professional-grade look.
+- **Solution Generation**: Generate a separate PDF with solutions for the puzzles.
+- **Parallel Puzzle Generation**: Uses multiprocessing to generate puzzles in parallel, utilizing all available CPU cores for faster generation.
+- **PDF Output**: Outputs generated puzzles and solutions as PDFs.
 
----
+## Installation
 
-## Requirements
+To use this project, make sure you have Python 3.x installed and the necessary dependencies:
 
-- Python 3.x
-- [FPDF](https://pyfpdf.github.io/) Python library for PDF generation.
+1. Clone this repository:
+   ```bash
+   git clone https://github.com/alicommit-malp/sudoku
+   cd sudoku
+   ```
+
+2. Install dependencies:
+   ```bash
+   pip install -r requirements.txt
+   ```
+
+### Dependencies
+
+- `numpy`: Used for managing the Sudoku grid.
+- `fpdf`: For generating PDFs of the puzzles and solutions.
+- `argparse`: For parsing command-line arguments.
+- `multiprocessing`: To parallelize puzzle generation.
+
+## Usage
+
+You can run the Sudoku generator from the command line using the `python` command. Below are examples of different ways to run the generator.
+
+### Basic Example
+
+Generate **10 easy puzzles** with **40 clues** and **5 medium puzzles** with **35 clues**, without symmetry:
+
+```bash
+python sudoku.py -config easy:10:40 -config medium:5:35 -output sudoku_puzzles.pdf
+```
+
+### Generating Hard Puzzles with Exactly 17 Clues
+
+Generate **5 hard puzzles** with **exactly 17 clues**, using symmetry and advanced difficulty checking, along with solutions:
+
+```bash
+python sudoku.py -config hard:5:17 -output sudoku_puzzles.pdf --use-symmetry --gen-answers
+```
+
+### Command Line Arguments
+
+- `-config`: Specify the difficulty level and the number of puzzles to generate in the format `difficulty:count:clues`. You can provide multiple configurations. 
+  - Example: `-config easy:10:40` generates 10 easy puzzles with 40 clues each.
+  - You can also omit the clue count, and a default will be used based on the difficulty.
   
-To install the required packages, run:
+- `-output`: Specify the name of the output PDF file (e.g., `sudoku_puzzles.pdf`).
+
+- `--gen-answers`: If this flag is provided, a second PDF with the solutions will be generated.
+
+- `--use-symmetry`: If this flag is provided, the puzzles will be generated with symmetrical clue placement for a professional-grade appearance.
+
+### Default Clue Counts
+
+If you do not provide a clue count for a puzzle, the following default values will be used based on difficulty:
+
+- `easy`: 40 clues
+- `medium`: 35 clues
+- `hard`: 30 clues
+
+## Examples
+
+### Generate 5 Hard Puzzles with 17 Clues Each:
 
 ```bash
-pip install fpdf numpy
-# or
-pip install -r requirements.txt
+python sudoku.py -config hard:5:17 -output hard_puzzles.pdf --gen-answers
 ```
 
----
+This will generate 5 hard puzzles with exactly 17 clues each, and the solutions will be saved in `hard_puzzles_answers.pdf`.
 
-## How to Use
-
-Make sure the script is executable. You can do this by running:
+### Generate Mixed Difficulty Puzzles:
 
 ```bash
-chmod +x sudoku_gen.py
+python sudoku.py -config easy:10:40 -config medium:5:35 -config hard:3:30 -output mixed_puzzles.pdf
 ```
 
-### Basic Usage
+This will generate:
+- 10 easy puzzles with 40 clues each.
+- 5 medium puzzles with 35 clues each.
+- 3 hard puzzles with 30 clues each.
 
-You can generate Sudoku puzzles by specifying the difficulty and number of puzzles per difficulty.
+### Enable Symmetry:
+
+To enable symmetrical clue placement in the puzzles, use the `--use-symmetry` flag:
 
 ```bash
-./sudoku_gen.py -config easy:10 -output sudoku_puzzles.pdf
+python sudoku.py -config hard:5:17 -output symmetrical_hard_puzzles.pdf --use-symmetry
 ```
 
-The command above generates 10 easy puzzles and saves them in a PDF file named `sudoku_puzzles.pdf`.
+### Generate Puzzles in Parallel:
 
----
+The generator automatically detects the number of CPU cores available and parallelizes the puzzle generation process. No additional flags are needed for multiprocessing.
 
-### Parameters
+## Contributing
 
-- **`-config`**: Specifies the difficulty and number of puzzles. Format: `"difficulty:number"`. You can use multiple `-config` parameters for different difficulties.
-  - Example: `-config easy:10 -config medium:15 -config hard:5`
-- **`-output`**: The name of the output PDF file for the puzzles.
-  - Example: `-output sudoku_puzzles.pdf`
-- **`-gen-answers`**: Optionally generate a second PDF with the answers (solutions) to the puzzles. Set this to `true` to enable this feature.
-  - Example: `-gen-answers true`
-
----
-
-### Examples
-
-1. **Generate 10 easy Sudoku puzzles and save them to a PDF**:
-
-```bash
-./sudoku_gen.py -config easy:10 -output sudoku_puzzles.pdf
-```
-
-2. **Generate 10 easy puzzles, 15 medium puzzles, and 5 hard puzzles, all in the same PDF**:
-
-```bash
-./sudoku_gen.py -config easy:10 -config medium:15 -config hard:5 -output sudoku_puzzles.pdf
-```
-
-3. **Generate 5 easy puzzles, 5 medium puzzles, and 5 hard puzzles, and generate a second PDF with the answers**:
-
-```bash
-./sudoku_gen.py -config easy:5 -config medium:5 -config hard:5 -output sudoku_puzzles.pdf -gen-answers true
-```
-
----
-
-## Output
-
-- **Puzzle PDF**: The script will generate a PDF containing the Sudoku puzzles. Each difficulty level starts with a title page.
-- **Answers PDF (optional)**: If you enable the `-gen-answers` flag, the script generates a second PDF with the solutions to the puzzles in the same order.
-
----
+Feel free to fork this repository and submit pull requests for improvements or bug fixes. If you have any issues or feature requests, please open an issue.
 
 ## License
 
-MIT License. Feel free to use and modify this project for personal or commercial use.
-
+This project is licensed under the MIT License.
