@@ -40,16 +40,17 @@ Examples:
 
         # Use symmetry in puzzle generation
         self.parser.add_argument(
-            '--use-symmetry', 
-            help="Enable symmetry in puzzle generation (for professional-grade puzzles).", 
+            '--use-symmetry',
+            help="Enable symmetry in puzzle generation (for professional-grade puzzles).",
             action='store_true'
         )
 
-        # Check if no arguments are provided
+    # Parse the command line arguments
+    def parse(self):
+        # When invoked with no CLI args, print help and exit cleanly. Doing
+        # this here (not in __init__) keeps construction side-effect-free, so
+        # the class can be instantiated from tests or a REPL without aborting.
         if len(sys.argv) == 1:
             self.parser.print_help(sys.stderr)
             sys.exit(1)
-
-    # Parse the command line arguments
-    def parse(self):
         return self.parser.parse_args()

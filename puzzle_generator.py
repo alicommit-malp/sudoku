@@ -34,28 +34,32 @@ class PuzzleGenerator:
                     return False
         return True
 
-    # Count how many solutions exist for the current grid
-    def count_solutions(self, grid):
+    # Count solutions, capped at `cap`. The default cap=2 is enough for the
+    # uniqueness check below — going higher would just enumerate solutions we
+    # never use, and is meaningfully slower on under-constrained puzzles.
+    def count_solutions(self, grid, cap=2):
         count = [0]
-        self.solve(grid.copy(), count)
+        self._solve(grid.copy(), count, cap)
         return count[0]
 
-    # Recursive solver to count solutions (helper for uniqueness check)
-    def solve(self, grid, count):
+    def _solve(self, grid, count, cap):
+        if count[0] >= cap:
+            return
         for i in range(9):
             for j in range(9):
                 if grid[i][j] == 0:
                     for num in range(1, 10):
                         if self.is_valid(grid, i, j, num):
                             grid[i][j] = num
-                            self.solve(grid, count)
+                            self._solve(grid, count, cap)
                             grid[i][j] = 0
+                            if count[0] >= cap:
+                                return
                     return
         count[0] += 1
 
-    # Ensure that the puzzle has a unique solution
     def has_unique_solution(self, grid):
-        return self.count_solutions(grid.copy()) == 1
+        return self.count_solutions(grid) == 1
 
     # Generate a full Sudoku grid and remove numbers based on min_clues
     def generate_sudoku(self, min_clues=30):

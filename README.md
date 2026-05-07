@@ -2,28 +2,31 @@
 
 ![Sample Puzzle](./samples/sample_puzzle.png)
 
-This is a **Sudoku Puzzle Generator** written in Python, supporting the generation of Sudoku puzzles of varying difficulty levels (`easy`, `medium`, `hard`). The generator allows for customizable clue counts, optional puzzle symmetry, and the creation of professional-grade Sudoku puzzles. It can also generate PDFs of the puzzles and their solutions. The generator leverages **multiprocessing** to use all available CPU cores, making the puzzle generation process faster.
+This is a **Sudoku Puzzle Generator** written in Python. It produces puzzles with **guaranteed unique solutions**, supports a target clue count and optional 180° rotational symmetry, and writes the result (with optional answer key) to PDF. It runs each puzzle in parallel across all CPU cores via `multiprocessing`.
+
+There's also a **single-page browser version** in [`docs/`](docs/) that ports the same generator to vanilla JS, with an interactive solver and an in-browser PDF download. See [Web version](#web-version) below.
 
 ## Features
 
-- **Customizable Difficulty**: Generate puzzles with `easy`, `medium`, or `hard` difficulty levels.
-- **Custom Clue Count**: Specify the number of clues for each puzzle (e.g., `hard:1:17` generates a hard puzzle with exactly 17 clues).
-- **Optional Symmetry**: Use the `--use-symmetry` flag to generate puzzles with symmetrical clue placement for a professional-grade look.
-- **Solution Generation**: Generate a separate PDF with solutions for the puzzles.
-- **Parallel Puzzle Generation**: Uses multiprocessing to generate puzzles in parallel, utilizing all available CPU cores for faster generation.
-- **PDF Output**: Outputs generated puzzles and solutions as PDFs.
+- **Difficulty presets**: `easy` / `medium` / `hard` (defaults: 40 / 35 / 30 clues).
+- **Target clue count**: pass `difficulty:count:clues`. The generator removes as many cells as it can without breaking uniqueness — so the achieved count is **at least** the requested target. Symmetric mode is more constrained and typically settles around 35–38 clues regardless of the target. The CLI prints a note when a target wasn't reachable.
+- **180° symmetry** (`--use-symmetry`): clues are placed symmetrically; uniqueness is still enforced, so symmetric puzzles often end up with more clues than requested.
+- **Answer PDF** (`--gen-answers`): writes a second PDF with the solutions.
+- **Parallel generation**: every puzzle runs concurrently across all available cores.
 
 ## Installation
 
 To use this project, make sure you have Python 3.x installed and the necessary dependencies:
 
 1. Clone this repository:
+
    ```bash
    git clone https://github.com/alicommit-malp/sudoku
    cd sudoku
    ```
 
 2. Install dependencies:
+
    ```bash
    pip install -r requirements.txt
    ```
@@ -47,29 +50,30 @@ Generate **10 easy puzzles** with **40 clues** and **5 medium puzzles** with **3
 python sudoku.py -config easy:10:40 -config medium:5:35 -output sudoku_puzzles.pdf
 ```
 
-### Generating Hard Puzzles with Exactly 17 Clues
+### Targeting a Low Clue Count
 
-Generate **5 hard puzzles** with **exactly 17 clues**, using symmetry and advanced difficulty checking, along with solutions:
+Generate **5 hard puzzles** targeting **17 clues** with symmetry and an answer key:
 
 ```bash
 python sudoku.py -config hard:5:17 -output sudoku_puzzles.pdf --use-symmetry --gen-answers
 ```
 
+`17` is the mathematical lower bound for a uniquely-solvable Sudoku, and the parser rejects anything below it. In practice, symmetric removal often can't get all the way down to 17 without making the puzzle ambiguous, so the achieved clue count will typically be higher. The CLI prints a per-group note like:
+
+```text
+hard: requested 17 clues, 5/5 puzzle(s) ended up with more (min=36, max=38) — uniqueness preserved.
+```
+
 ### Command Line Arguments
 
-- `-config`: Specify the difficulty level and the number of puzzles to generate in the format `difficulty:count:clues`. You can provide multiple configurations. 
-  - Example: `-config easy:10:40` generates 10 easy puzzles with 40 clues each.
-  - You can also omit the clue count, and a default will be used based on the difficulty.
-  
-- `-output`: Specify the name of the output PDF file (e.g., `sudoku_puzzles.pdf`).
-
-- `--gen-answers`: If this flag is provided, a second PDF with the solutions will be generated.
-
-- `--use-symmetry`: If this flag is provided, the puzzles will be generated with symmetrical clue placement for a professional-grade appearance.
+- `-config` (repeatable): difficulty / count / target-clues, in the form `difficulty:count:clues`. The clue field is optional — defaults are used when omitted.
+- `-output`: output PDF path.
+- `--gen-answers`: also write `<output>_answers.pdf` containing the solutions.
+- `--use-symmetry`: 180° rotational symmetric clue placement.
 
 ### Default Clue Counts
 
-If you do not provide a clue count for a puzzle, the following default values will be used based on difficulty:
+Used when the third field of `-config` is omitted:
 
 - `easy`: 40 clues
 - `medium`: 35 clues
@@ -77,36 +81,40 @@ If you do not provide a clue count for a puzzle, the following default values wi
 
 ## Examples
 
-### Generate 5 Hard Puzzles with 17 Clues Each:
-
-```bash
-python sudoku.py -config hard:5:17 -output hard_puzzles.pdf --gen-answers
-```
-
-This will generate 5 hard puzzles with exactly 17 clues each, and the solutions will be saved in `hard_puzzles_answers.pdf`.
-
-### Generate Mixed Difficulty Puzzles:
+### Mixed-difficulty batch
 
 ```bash
 python sudoku.py -config easy:10:40 -config medium:5:35 -config hard:3:30 -output mixed_puzzles.pdf
 ```
 
-This will generate:
-- 10 easy puzzles with 40 clues each.
-- 5 medium puzzles with 35 clues each.
-- 3 hard puzzles with 30 clues each.
+Generates 10 easy + 5 medium + 3 hard puzzles into a single PDF, with a title page per difficulty group.
 
-### Enable Symmetry:
-
-To enable symmetrical clue placement in the puzzles, use the `--use-symmetry` flag:
+### Symmetric puzzles
 
 ```bash
-python sudoku.py -config hard:5:17 -output symmetrical_hard_puzzles.pdf --use-symmetry
+python sudoku.py -config hard:5:25 -output symmetric_hard.pdf --use-symmetry --gen-answers
 ```
 
-### Generate Puzzles in Parallel:
+## Web version
 
-The generator automatically detects the number of CPU cores available and parallelizes the puzzle generation process. No additional flags are needed for multiprocessing.
+A self-contained, single-file browser version lives in [`docs/index.html`](docs/index.html). It ports the generator to vanilla JS, adds an interactive solver (live conflict highlighting, "Check" against the unique solution, "Reveal", etc.), and uses [jsPDF](https://github.com/parallax/jsPDF) for in-browser PDF downloads. No build step.
+
+To preview locally:
+
+```bash
+python3 -m http.server -d docs 8000
+# open http://localhost:8000/
+```
+
+To deploy to GitHub Pages: in the repo's *Settings → Pages*, set **Source** to *Deploy from a branch* and **Folder** to `/docs`.
+
+## Testing
+
+The Python generator has a `unittest` test suite covering the core invariants (uniqueness, 180° symmetry, given/solution consistency) plus regressions for the bugs that have been fixed in this repo. Run from the repo root:
+
+```bash
+python -m unittest discover tests
+```
 
 ## Contributing
 

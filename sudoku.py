@@ -11,15 +11,18 @@ Supports parallel processing to utilize all CPU cores for generating puzzles con
 """
 
 from multiprocessing import Pool, cpu_count
+
+import numpy as np
+
 from advanced_sudoku_generator import AdvancedSudokuGenerator
 from pdf_generator import PDFGenerator
 from argument_parser import ArgumentParser
 
 # Helper function for multiprocessing
 def generate_puzzle_task(task):
-    min_clues, difficulty, use_symmetry = task
+    min_clues, _difficulty, use_symmetry = task
     generator = AdvancedSudokuGenerator()
-    return generator.generate_professional_sudoku(min_clues=min_clues, symmetry=use_symmetry, required_difficulty=difficulty)
+    return generator.generate_professional_sudoku(min_clues=min_clues, symmetry=use_symmetry)
 
 # Main Function
 def main():
@@ -66,7 +69,18 @@ def main():
     index = 0
     for difficulty in ['easy', 'medium', 'hard']:
         for config in puzzle_config[difficulty]:
-            puzzles_generated[difficulty].extend(puzzles_generated_flat[index:index + config['count']])
+            group = puzzles_generated_flat[index:index + config['count']]
+            puzzles_generated[difficulty].extend(group)
+            # Surface when uniqueness-preserving removal couldn't reach the requested
+            # clue count (common with --use-symmetry or aggressive low-clue targets).
+            achieved = [int(np.count_nonzero(p)) for p, _ in group]
+            over_target = [a for a in achieved if a > config['min_clues']]
+            if over_target:
+                print(
+                    f"  {difficulty}: requested {config['min_clues']} clues, "
+                    f"{len(over_target)}/{len(achieved)} puzzle(s) ended up with more "
+                    f"(min={min(over_target)}, max={max(over_target)}) — uniqueness preserved."
+                )
             index += config['count']
 
     # Generate and save puzzle PDFs

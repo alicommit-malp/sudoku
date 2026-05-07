@@ -1,0 +1,781 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sudoku Puzzle Generator</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<style>
+  :root {
+    --bg: #fafaf7;
+    --fg: #1a1a1a;
+    --muted: #666;
+    --border: #d0d0d0;
+    --thick: #1a1a1a;
+    --accent: #2563eb;
+    --accent-hover: #1d4ed8;
+    --panel: #fff;
+    --shadow: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    background: var(--bg);
+    color: var(--fg);
+    font: 15px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+    padding: 24px 16px 64px;
+  }
+  .wrap { max-width: 920px; margin: 0 auto; }
+  h1 { font-size: 24px; margin: 0 0 4px; }
+  .sub { color: var(--muted); margin-bottom: 24px; }
+  .tabs {
+    display: flex; gap: 4px; border-bottom: 1px solid var(--border); margin-bottom: 20px;
+  }
+  .tab {
+    padding: 10px 16px; cursor: pointer; border: none; background: none;
+    font-size: 14px; font-weight: 500; color: var(--muted);
+    border-bottom: 2px solid transparent; margin-bottom: -1px;
+  }
+  .tab.active { color: var(--fg); border-bottom-color: var(--accent); }
+  .panel {
+    background: var(--panel); border: 1px solid var(--border); border-radius: 8px;
+    padding: 20px; box-shadow: var(--shadow); margin-bottom: 16px;
+  }
+  .row { display: flex; flex-wrap: wrap; gap: 12px; align-items: end; }
+  .field { display: flex; flex-direction: column; gap: 4px; }
+  .field label { font-size: 12px; color: var(--muted); font-weight: 500; }
+  .field input, .field select {
+    padding: 7px 10px; border: 1px solid var(--border); border-radius: 6px;
+    font: inherit; background: #fff;
+  }
+  .field input[type=number] { width: 80px; }
+  .field input[type=checkbox] { margin: 4px 0; align-self: flex-start; }
+  .check { flex-direction: row; align-items: center; gap: 8px; }
+  .check label { font-size: 14px; color: var(--fg); }
+  button {
+    padding: 8px 16px; border: 1px solid var(--accent); background: var(--accent);
+    color: #fff; border-radius: 6px; cursor: pointer; font: inherit; font-weight: 500;
+  }
+  button:hover { background: var(--accent-hover); }
+  button:disabled { opacity: 0.5; cursor: not-allowed; }
+  button.secondary {
+    background: #fff; color: var(--fg); border-color: var(--border);
+  }
+  button.secondary:hover { background: #f5f5f5; }
+  button.ghost {
+    background: none; border: none; color: var(--accent); padding: 4px 8px;
+  }
+  .grid-wrap { display: flex; justify-content: center; padding: 16px 0; }
+  .sudoku {
+    display: grid; grid-template-columns: repeat(9, 40px); grid-template-rows: repeat(9, 40px);
+    border: 2px solid var(--thick);
+  }
+  .cell {
+    display: flex; align-items: center; justify-content: center;
+    border: 1px solid var(--border); font-size: 20px; font-variant-numeric: tabular-nums;
+    background: #fff;
+  }
+  .cell.given { font-weight: 600; }
+  .cell.solved { color: var(--accent); }
+  .cell.empty { color: transparent; }
+  .cell input {
+    width: 100%; height: 100%; border: none; outline: none; background: transparent;
+    text-align: center; font: inherit; font-size: 20px; color: var(--accent);
+    font-variant-numeric: tabular-nums; padding: 0;
+  }
+  .cell input:focus { background: #eef4ff; }
+  .cell.conflict { background: #fde2e2; }
+  .cell.conflict input { color: #b91c1c; }
+  .cell.wrong { background: #fde2e2; }
+  .cell.wrong input { color: #b91c1c; }
+  .cell.right { background: #e6f5ea; }
+  .banner {
+    margin-top: 12px; padding: 10px 14px; border-radius: 6px; text-align: center;
+    font-weight: 500; display: none;
+  }
+  .banner.show { display: block; }
+  .banner.success { background: #e6f5ea; color: #166534; border: 1px solid #bbe5c5; }
+  .banner.info { background: #eef4ff; color: #1e40af; border: 1px solid #c7d8ff; }
+  .banner.warn { background: #fef3c7; color: #92400e; border: 1px solid #fde68a; }
+  /* thick lines every 3 */
+  .sudoku .cell:nth-child(3n) { border-right: 2px solid var(--thick); }
+  .sudoku .cell:nth-child(9n) { border-right: none; }
+  .sudoku .cell:nth-child(n+19):nth-child(-n+27),
+  .sudoku .cell:nth-child(n+46):nth-child(-n+54) { border-bottom: 2px solid var(--thick); }
+  .config-list { display: flex; flex-direction: column; gap: 8px; margin: 12px 0; }
+  .config-row {
+    display: flex; gap: 8px; align-items: center; padding: 8px;
+    background: #f5f5f3; border-radius: 6px;
+  }
+  .config-row select, .config-row input { padding: 6px 8px; }
+  .config-row .x {
+    background: none; border: none; color: var(--muted); cursor: pointer;
+    font-size: 18px; padding: 0 6px;
+  }
+  .progress {
+    margin-top: 12px; font-size: 13px; color: var(--muted);
+  }
+  .progress-bar {
+    height: 4px; background: #eee; border-radius: 2px; overflow: hidden; margin-top: 4px;
+  }
+  .progress-bar > div {
+    height: 100%; background: var(--accent); transition: width 0.2s;
+  }
+  .meta { font-size: 13px; color: var(--muted); text-align: center; margin-top: 8px; }
+  .hidden { display: none !important; }
+  footer {
+    margin-top: 32px; text-align: center; font-size: 12px; color: var(--muted);
+  }
+  footer a { color: var(--muted); }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Sudoku Puzzle Generator</h1>
+  <div class="sub">Generates puzzles with guaranteed unique solutions. Runs entirely in your browser.</div>
+
+  <div class="tabs" role="tablist">
+    <button class="tab active" data-tab="single">Single</button>
+    <button class="tab" data-tab="batch">Batch + PDF</button>
+  </div>
+
+  <!-- SINGLE MODE -->
+  <div id="tab-single">
+    <div class="panel">
+      <div class="row">
+        <div class="field">
+          <label for="s-difficulty">Difficulty</label>
+          <select id="s-difficulty">
+            <option value="easy">Easy</option>
+            <option value="medium" selected>Medium</option>
+            <option value="hard">Hard</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="s-clues">Min clues</label>
+          <input id="s-clues" type="number" min="17" max="81" value="35">
+        </div>
+        <div class="field check">
+          <input id="s-symmetry" type="checkbox">
+          <label for="s-symmetry">Symmetry</label>
+        </div>
+        <button id="s-generate">Generate</button>
+      </div>
+      <div class="progress hidden" id="s-progress">Working…</div>
+    </div>
+
+    <div class="panel">
+      <div class="grid-wrap">
+        <div class="sudoku" id="s-grid"></div>
+      </div>
+      <div class="meta" id="s-meta">No puzzle yet — press Generate.</div>
+      <div class="row" style="justify-content: center; margin-top: 8px;">
+        <button id="s-check" class="secondary" disabled>Check</button>
+        <button id="s-clear" class="secondary" disabled>Clear entries</button>
+        <button id="s-reveal" class="secondary" disabled>Reveal solution</button>
+      </div>
+      <div class="banner" id="s-banner"></div>
+    </div>
+  </div>
+
+  <!-- BATCH MODE -->
+  <div id="tab-batch" class="hidden">
+    <div class="panel">
+      <div style="font-weight: 500; margin-bottom: 8px;">Puzzle configurations</div>
+      <div class="config-list" id="b-list"></div>
+      <button class="ghost" id="b-add">+ Add row</button>
+
+      <div class="row" style="margin-top: 16px;">
+        <div class="field check">
+          <input id="b-symmetry" type="checkbox">
+          <label for="b-symmetry">Symmetry</label>
+        </div>
+        <div class="field check">
+          <input id="b-answers" type="checkbox" checked>
+          <label for="b-answers">Include answers PDF</label>
+        </div>
+        <button id="b-generate">Generate &amp; Download PDF</button>
+      </div>
+
+      <div class="progress hidden" id="b-progress">
+        <div id="b-progress-text">Working…</div>
+        <div class="progress-bar"><div id="b-progress-fill" style="width: 0%"></div></div>
+      </div>
+    </div>
+  </div>
+
+  <footer>
+    <a href="https://github.com/alicommit-malp/sudoku" target="_blank" rel="noopener">Source on GitHub</a>
+  </footer>
+</div>
+
+<script>
+"use strict";
+
+// ----- Generator (vanilla JS port of the Python algorithm) -----
+
+function newGrid() {
+  return Array.from({length: 9}, () => new Int8Array(9));
+}
+function cloneGrid(g) {
+  return g.map(r => Int8Array.from(r));
+}
+function shuffle(arr) {
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = (Math.random() * (i + 1)) | 0;
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
+}
+function isValid(g, row, col, num) {
+  for (let i = 0; i < 9; i++) {
+    if (g[row][i] === num || g[i][col] === num) return false;
+  }
+  const br = row - (row % 3), bc = col - (col % 3);
+  for (let i = 0; i < 3; i++) {
+    for (let j = 0; j < 3; j++) {
+      if (g[br + i][bc + j] === num) return false;
+    }
+  }
+  return true;
+}
+function fillGrid(g) {
+  for (let i = 0; i < 9; i++) {
+    for (let j = 0; j < 9; j++) {
+      if (g[i][j] === 0) {
+        const nums = shuffle([1,2,3,4,5,6,7,8,9]);
+        for (const n of nums) {
+          if (isValid(g, i, j, n)) {
+            g[i][j] = n;
+            if (fillGrid(g)) return true;
+            g[i][j] = 0;
+          }
+        }
+        return false;
+      }
+    }
+  }
+  return true;
+}
+
+// Returns >=2 if multiple solutions exist (capped — we only need uniqueness).
+function countSolutionsCapped(g, cap) {
+  let count = 0;
+  function solve() {
+    if (count >= cap) return;
+    for (let i = 0; i < 9; i++) {
+      for (let j = 0; j < 9; j++) {
+        if (g[i][j] === 0) {
+          for (let n = 1; n <= 9; n++) {
+            if (isValid(g, i, j, n)) {
+              g[i][j] = n;
+              solve();
+              g[i][j] = 0;
+              if (count >= cap) return;
+            }
+          }
+          return;
+        }
+      }
+    }
+    count++;
+  }
+  solve();
+  return count;
+}
+function hasUniqueSolution(g) {
+  return countSolutionsCapped(cloneGrid(g), 2) === 1;
+}
+
+function removeNumbersExact(g, numClues) {
+  const cellsToRemove = 81 - numClues;
+  let removed = 0;
+  const all = [];
+  for (let r = 0; r < 9; r++) for (let c = 0; c < 9; c++) all.push([r, c]);
+  shuffle(all);
+  for (const [r, c] of all) {
+    if (removed >= cellsToRemove) break;
+    if (g[r][c] === 0) continue;
+    const backup = g[r][c];
+    g[r][c] = 0;
+    if (hasUniqueSolution(g)) removed++;
+    else g[r][c] = backup;
+  }
+  return g;
+}
+
+function removeNumbersSymmetric(g, numClues) {
+  const cellsToRemove = 81 - numClues;
+  let removed = 0;
+  const pairs = [];
+  for (let r = 0; r < 9; r++) {
+    for (let c = 0; c < 9; c++) {
+      if (r <= 8 - r && c <= 8 - c) pairs.push([r, c, 8 - r, 8 - c]);
+    }
+  }
+  shuffle(pairs);
+  for (const [r1, c1, r2, c2] of pairs) {
+    if (removed >= cellsToRemove) break;
+    if (g[r1][c1] === 0 || g[r2][c2] === 0) continue;
+    const b1 = g[r1][c1], b2 = g[r2][c2];
+    g[r1][c1] = 0; g[r2][c2] = 0;
+    if (hasUniqueSolution(g)) {
+      removed += (r1 === r2 && c1 === c2) ? 1 : 2;
+    } else {
+      g[r1][c1] = b1; g[r2][c2] = b2;
+    }
+  }
+  return g;
+}
+
+function countClues(puzzle) {
+  let n = 0;
+  for (let r = 0; r < 9; r++) for (let c = 0; c < 9; c++) if (puzzle[r][c] !== 0) n++;
+  return n;
+}
+
+function generatePuzzle({minClues, symmetry}) {
+  const solution = newGrid();
+  fillGrid(solution);
+  let puzzle = cloneGrid(solution);
+  puzzle = symmetry
+    ? removeNumbersSymmetric(puzzle, minClues)
+    : removeNumbersExact(puzzle, minClues);
+  // Note: we do NOT brute-force the count to exactly minClues — that would risk
+  // breaking uniqueness (and symmetry). The achieved clue count is >= minClues.
+  return { puzzle, solution, achievedClues: countClues(puzzle) };
+}
+
+// Yield to the event loop so the UI doesn't freeze on hard puzzles.
+function yieldToUI() {
+  return new Promise(r => setTimeout(r, 0));
+}
+
+// ----- UI: tabs -----
+
+document.querySelectorAll(".tab").forEach(t => {
+  t.addEventListener("click", () => {
+    document.querySelectorAll(".tab").forEach(x => x.classList.remove("active"));
+    t.classList.add("active");
+    const which = t.dataset.tab;
+    document.getElementById("tab-single").classList.toggle("hidden", which !== "single");
+    document.getElementById("tab-batch").classList.toggle("hidden", which !== "batch");
+  });
+});
+
+// ----- UI: single mode (interactive) -----
+
+const DEFAULT_CLUES = { easy: 40, medium: 35, hard: 30 };
+const sGrid = document.getElementById("s-grid");
+const sDifficulty = document.getElementById("s-difficulty");
+const sClues = document.getElementById("s-clues");
+const sSymmetry = document.getElementById("s-symmetry");
+const sGenerate = document.getElementById("s-generate");
+const sCheck = document.getElementById("s-check");
+const sClear = document.getElementById("s-clear");
+const sReveal = document.getElementById("s-reveal");
+const sProgress = document.getElementById("s-progress");
+const sMeta = document.getElementById("s-meta");
+const sBanner = document.getElementById("s-banner");
+
+sDifficulty.addEventListener("change", () => {
+  sClues.value = DEFAULT_CLUES[sDifficulty.value];
+});
+
+let currentPuzzle = null;
+let currentSolution = null;
+let userEntries = null;     // 9x9 of digits the user has typed (0 = empty)
+let cellEls = null;         // 9x9 DOM refs to the .cell wrapper
+let inputEls = null;        // 9x9 DOM refs to the <input> for empty cells (null for givens)
+let interactionLocked = false; // true after Reveal — disables inputs
+
+function setBanner(kind, msg) {
+  sBanner.className = "banner show " + kind;
+  sBanner.textContent = msg;
+}
+function clearBanner() { sBanner.className = "banner"; sBanner.textContent = ""; }
+
+// Build a fresh interactive grid for the given puzzle. Givens are static; empty
+// cells become single-character <input>s wired to user entry state.
+function buildInteractiveGrid(puzzle) {
+  sGrid.innerHTML = "";
+  cellEls = Array.from({length: 9}, () => Array(9).fill(null));
+  inputEls = Array.from({length: 9}, () => Array(9).fill(null));
+  userEntries = newGrid();
+  for (let r = 0; r < 9; r++) {
+    for (let c = 0; c < 9; c++) {
+      const cell = document.createElement("div");
+      cell.className = "cell";
+      if (puzzle[r][c] !== 0) {
+        cell.classList.add("given");
+        cell.textContent = puzzle[r][c];
+      } else {
+        const input = document.createElement("input");
+        input.type = "text";
+        input.inputMode = "numeric";
+        input.maxLength = 1;
+        input.dataset.r = r; input.dataset.c = c;
+        input.addEventListener("input", onCellInput);
+        input.addEventListener("keydown", onCellKey);
+        cell.appendChild(input);
+        inputEls[r][c] = input;
+      }
+      cellEls[r][c] = cell;
+      sGrid.appendChild(cell);
+    }
+  }
+}
+
+// Empty placeholder grid (before first generate).
+function buildEmptyGrid() {
+  sGrid.innerHTML = "";
+  for (let i = 0; i < 81; i++) {
+    const d = document.createElement("div");
+    d.className = "cell empty";
+    sGrid.appendChild(d);
+  }
+}
+buildEmptyGrid();
+
+// Compose puzzle givens with current user entries into a single 9x9 grid.
+function effectiveGrid() {
+  const g = cloneGrid(currentPuzzle);
+  for (let r = 0; r < 9; r++) for (let c = 0; c < 9; c++) {
+    if (g[r][c] === 0 && userEntries[r][c] !== 0) g[r][c] = userEntries[r][c];
+  }
+  return g;
+}
+
+// A cell conflicts if its digit appears elsewhere in its row/column/3x3 box.
+// Operates on the effective (givens + user) grid.
+function recomputeConflicts() {
+  const g = effectiveGrid();
+  // Reset per-cell state
+  for (let r = 0; r < 9; r++) for (let c = 0; c < 9; c++) {
+    cellEls[r][c].classList.remove("conflict", "wrong", "right");
+  }
+  for (let r = 0; r < 9; r++) for (let c = 0; c < 9; c++) {
+    const v = g[r][c];
+    if (v === 0) continue;
+    let conflict = false;
+    for (let i = 0; i < 9 && !conflict; i++) {
+      if (i !== c && g[r][i] === v) conflict = true;
+      if (i !== r && g[i][c] === v) conflict = true;
+    }
+    const br = r - r % 3, bc = c - c % 3;
+    for (let i = 0; i < 3 && !conflict; i++) {
+      for (let j = 0; j < 3 && !conflict; j++) {
+        const rr = br + i, cc = bc + j;
+        if ((rr !== r || cc !== c) && g[rr][cc] === v) conflict = true;
+      }
+    }
+    if (conflict) cellEls[r][c].classList.add("conflict");
+  }
+}
+
+// Detect a fully completed, conflict-free grid — i.e. the puzzle has been solved.
+function isSolvedCorrectly() {
+  const g = effectiveGrid();
+  for (let r = 0; r < 9; r++) for (let c = 0; c < 9; c++) {
+    if (g[r][c] === 0) return false;
+  }
+  // No conflict classes left after recompute => valid Sudoku => correct (puzzle is unique).
+  for (let r = 0; r < 9; r++) for (let c = 0; c < 9; c++) {
+    if (cellEls[r][c].classList.contains("conflict")) return false;
+  }
+  return true;
+}
+
+function onCellInput(e) {
+  if (interactionLocked) { e.target.value = ""; return; }
+  const r = +e.target.dataset.r, c = +e.target.dataset.c;
+  const raw = e.target.value;
+  // Filter to a single 1-9 digit
+  const m = raw.match(/[1-9]/);
+  const v = m ? +m[0] : 0;
+  e.target.value = v ? String(v) : "";
+  userEntries[r][c] = v;
+  recomputeConflicts();
+  if (isSolvedCorrectly()) {
+    setBanner("success", "Solved! The puzzle is valid and your solution matches the unique solution.");
+  } else {
+    clearBanner();
+  }
+}
+
+// Arrow-key navigation between empty cells.
+function onCellKey(e) {
+  const r = +e.target.dataset.r, c = +e.target.dataset.c;
+  let dr = 0, dc = 0;
+  if (e.key === "ArrowUp") dr = -1;
+  else if (e.key === "ArrowDown") dr = 1;
+  else if (e.key === "ArrowLeft") dc = -1;
+  else if (e.key === "ArrowRight" || e.key === "Tab") dc = 1;
+  else if (e.key === "Backspace" && !e.target.value) dc = -1;
+  else return;
+  if (e.key !== "Tab") e.preventDefault();
+  let nr = r, nc = c;
+  for (let step = 0; step < 81; step++) {
+    nc += dc; nr += dr;
+    if (nc < 0) { nc = 8; nr -= 1; }
+    if (nc > 8) { nc = 0; nr += 1; }
+    if (nr < 0 || nr > 8) return;
+    if (inputEls[nr][nc]) { inputEls[nr][nc].focus(); inputEls[nr][nc].select(); return; }
+  }
+}
+
+sGenerate.addEventListener("click", async () => {
+  const minClues = Math.max(17, Math.min(81, parseInt(sClues.value, 10) || 30));
+  sClues.value = minClues;
+  sGenerate.disabled = true;
+  sCheck.disabled = true; sClear.disabled = true; sReveal.disabled = true;
+  sProgress.classList.remove("hidden");
+  sMeta.textContent = "";
+  clearBanner();
+  await yieldToUI();
+  const t0 = performance.now();
+  const { puzzle, solution, achievedClues } = generatePuzzle({ minClues, symmetry: sSymmetry.checked });
+  const elapsed = ((performance.now() - t0) / 1000).toFixed(2);
+  currentPuzzle = puzzle; currentSolution = solution;
+  interactionLocked = false;
+  buildInteractiveGrid(puzzle);
+  const note = achievedClues > minClues
+    ? ` (couldn't reach ${minClues} without breaking uniqueness)` : "";
+  sMeta.textContent = `${sDifficulty.value} • ${achievedClues} clues${note} • generated in ${elapsed}s`;
+  sCheck.disabled = false; sClear.disabled = false; sReveal.disabled = false;
+  sProgress.classList.add("hidden");
+  sGenerate.disabled = false;
+});
+
+// "Check" — explicitly compare every user entry against the stored solution.
+// More informative than passive conflict highlighting (also flags entries that
+// happen to be conflict-free but disagree with the unique solution).
+sCheck.addEventListener("click", () => {
+  if (!currentPuzzle) return;
+  let entered = 0, wrong = 0, right = 0;
+  for (let r = 0; r < 9; r++) for (let c = 0; c < 9; c++) {
+    cellEls[r][c].classList.remove("wrong", "right");
+    if (currentPuzzle[r][c] !== 0) continue;
+    const v = userEntries[r][c];
+    if (v === 0) continue;
+    entered++;
+    if (v === currentSolution[r][c]) {
+      cellEls[r][c].classList.add("right");
+      right++;
+    } else {
+      cellEls[r][c].classList.add("wrong");
+      wrong++;
+    }
+  }
+  if (entered === 0) {
+    setBanner("info", "No entries yet — type a digit into an empty cell.");
+  } else if (wrong === 0 && isSolvedCorrectly()) {
+    setBanner("success", `Solved! All ${right} entries match the unique solution.`);
+  } else if (wrong === 0) {
+    setBanner("info", `So far so good — ${right} correct, ${81 - countClues(currentPuzzle) - entered} cells left.`);
+  } else {
+    setBanner("warn", `${wrong} wrong, ${right} correct. Wrong cells are highlighted in red.`);
+  }
+});
+
+sClear.addEventListener("click", () => {
+  if (!currentPuzzle) return;
+  for (let r = 0; r < 9; r++) for (let c = 0; c < 9; c++) {
+    if (inputEls[r][c]) inputEls[r][c].value = "";
+    userEntries[r][c] = 0;
+    cellEls[r][c].classList.remove("conflict", "wrong", "right");
+  }
+  interactionLocked = false;
+  for (let r = 0; r < 9; r++) for (let c = 0; c < 9; c++) {
+    if (inputEls[r][c]) inputEls[r][c].disabled = false;
+  }
+  clearBanner();
+});
+
+sReveal.addEventListener("click", () => {
+  if (!currentPuzzle) return;
+  for (let r = 0; r < 9; r++) for (let c = 0; c < 9; c++) {
+    if (currentPuzzle[r][c] !== 0) continue;
+    inputEls[r][c].value = String(currentSolution[r][c]);
+    inputEls[r][c].disabled = true;
+    userEntries[r][c] = currentSolution[r][c];
+    cellEls[r][c].classList.remove("conflict", "wrong");
+    cellEls[r][c].classList.add("right");
+  }
+  interactionLocked = true;
+  setBanner("info", "Solution revealed. Press Generate for a new puzzle, or Clear to try again.");
+});
+
+// ----- UI: batch mode -----
+
+const bList = document.getElementById("b-list");
+const bAdd = document.getElementById("b-add");
+const bGenerate = document.getElementById("b-generate");
+const bSymmetry = document.getElementById("b-symmetry");
+const bAnswers = document.getElementById("b-answers");
+const bProgress = document.getElementById("b-progress");
+const bProgressText = document.getElementById("b-progress-text");
+const bProgressFill = document.getElementById("b-progress-fill");
+
+function addConfigRow(difficulty = "easy", count = 5, clues = DEFAULT_CLUES.easy) {
+  const row = document.createElement("div");
+  row.className = "config-row";
+  row.innerHTML = `
+    <select class="cfg-difficulty">
+      <option value="easy">Easy</option>
+      <option value="medium">Medium</option>
+      <option value="hard">Hard</option>
+    </select>
+    <span style="color:var(--muted);font-size:13px;">×</span>
+    <input type="number" class="cfg-count" min="1" max="100" value="${count}" style="width:70px;">
+    <span style="color:var(--muted);font-size:13px;">puzzles,</span>
+    <input type="number" class="cfg-clues" min="17" max="81" value="${clues}" style="width:70px;">
+    <span style="color:var(--muted);font-size:13px;">clues each</span>
+    <button class="x" title="Remove">×</button>
+  `;
+  row.querySelector(".cfg-difficulty").value = difficulty;
+  row.querySelector(".cfg-difficulty").addEventListener("change", e => {
+    row.querySelector(".cfg-clues").value = DEFAULT_CLUES[e.target.value];
+  });
+  row.querySelector(".x").addEventListener("click", () => row.remove());
+  bList.appendChild(row);
+}
+addConfigRow("easy", 5, 40);
+
+bAdd.addEventListener("click", () => addConfigRow());
+
+function readBatchConfigs() {
+  const configs = [];
+  for (const row of bList.querySelectorAll(".config-row")) {
+    const difficulty = row.querySelector(".cfg-difficulty").value;
+    const count = parseInt(row.querySelector(".cfg-count").value, 10);
+    const clues = parseInt(row.querySelector(".cfg-clues").value, 10);
+    if (!count || count < 1) continue;
+    if (clues < 17) {
+      throw new Error(`Minimum clues must be at least 17 (got ${clues} for ${difficulty}).`);
+    }
+    configs.push({ difficulty, count, clues });
+  }
+  return configs;
+}
+
+// PDF layout: two puzzles per A4 page, mirrors pdf_generator.py.
+function drawSudokuOnPDF(pdf, grid, offsetY, title) {
+  const pageW = 210;
+  const cell = 10;
+  const offsetX = (pageW - 9 * cell) / 2;
+
+  pdf.setFont("helvetica", "bold");
+  pdf.setFontSize(14);
+  pdf.text(title, pageW / 2, offsetY - 6, { align: "center" });
+
+  pdf.setFontSize(14);
+  pdf.setFont("helvetica", "normal");
+  pdf.setLineWidth(0.2);
+  for (let i = 0; i < 9; i++) {
+    for (let j = 0; j < 9; j++) {
+      const x = offsetX + j * cell, y = offsetY + i * cell;
+      pdf.rect(x, y, cell, cell);
+      const v = grid[i][j];
+      if (v !== 0) {
+        pdf.text(String(v), x + cell / 2, y + cell / 2 + 2, { align: "center" });
+      }
+    }
+  }
+  // thick 3x3 borders
+  pdf.setLineWidth(0.7);
+  for (let i = 0; i <= 9; i += 3) {
+    pdf.line(offsetX + i * cell, offsetY, offsetX + i * cell, offsetY + 9 * cell);
+    pdf.line(offsetX, offsetY + i * cell, offsetX + 9 * cell, offsetY + i * cell);
+  }
+}
+
+function buildPDF(puzzlesByDifficulty, isAnswers) {
+  const { jsPDF } = window.jspdf;
+  const pdf = new jsPDF({ unit: "mm", format: "a4" });
+  let firstPage = true;
+  for (const difficulty of ["easy", "medium", "hard"]) {
+    const list = puzzlesByDifficulty[difficulty];
+    if (!list || !list.length) continue;
+    // Title page
+    if (!firstPage) pdf.addPage();
+    firstPage = false;
+    pdf.setFont("helvetica", "bold");
+    pdf.setFontSize(28);
+    const heading = `${difficulty[0].toUpperCase()}${difficulty.slice(1)} Sudoku${isAnswers ? " Answers" : ""}`;
+    pdf.text(heading, 105, 140, { align: "center" });
+
+    for (let i = 0; i < list.length; i += 2) {
+      pdf.addPage();
+      const a = list[i];
+      drawSudokuOnPDF(
+        pdf,
+        isAnswers ? a.solution : a.puzzle,
+        40,
+        `${difficulty[0].toUpperCase()}${difficulty.slice(1)} ${isAnswers ? "Solution" : "Puzzle"} #${i + 1}`
+      );
+      if (i + 1 < list.length) {
+        const b = list[i + 1];
+        drawSudokuOnPDF(
+          pdf,
+          isAnswers ? b.solution : b.puzzle,
+          180,
+          `${difficulty[0].toUpperCase()}${difficulty.slice(1)} ${isAnswers ? "Solution" : "Puzzle"} #${i + 2}`
+        );
+      }
+    }
+  }
+  return pdf;
+}
+
+bGenerate.addEventListener("click", async () => {
+  let configs;
+  try { configs = readBatchConfigs(); }
+  catch (e) { alert(e.message); return; }
+  if (configs.length === 0) { alert("Add at least one configuration row."); return; }
+
+  bGenerate.disabled = true;
+  bProgress.classList.remove("hidden");
+  bProgressFill.style.width = "0%";
+
+  // Flat task list, preserving order
+  const tasks = [];
+  for (const cfg of configs) {
+    for (let i = 0; i < cfg.count; i++) {
+      tasks.push({ difficulty: cfg.difficulty, minClues: cfg.clues });
+    }
+  }
+  const symmetry = bSymmetry.checked;
+  const byDifficulty = { easy: [], medium: [], hard: [] };
+
+  try {
+    for (let i = 0; i < tasks.length; i++) {
+      const t = tasks[i];
+      bProgressText.textContent = `Generating puzzle ${i + 1} of ${tasks.length} (${t.difficulty}, ${t.minClues} clues)…`;
+      await yieldToUI();
+      const { puzzle, solution } = generatePuzzle({ minClues: t.minClues, symmetry });
+      byDifficulty[t.difficulty].push({ puzzle, solution });
+      bProgressFill.style.width = `${((i + 1) / tasks.length) * 100}%`;
+    }
+
+    bProgressText.textContent = "Building PDF…";
+    await yieldToUI();
+    const pdf = buildPDF(byDifficulty, false);
+    pdf.save("sudoku_puzzles.pdf");
+
+    if (bAnswers.checked) {
+      const ans = buildPDF(byDifficulty, true);
+      ans.save("sudoku_puzzles_answers.pdf");
+    }
+
+    bProgressText.textContent = `Done — ${tasks.length} puzzle${tasks.length === 1 ? "" : "s"} generated.`;
+  } catch (e) {
+    bProgressText.textContent = `Error: ${e.message}`;
+  } finally {
+    bGenerate.disabled = false;
+  }
+});
+
+</script>
+</body>
+</html>
